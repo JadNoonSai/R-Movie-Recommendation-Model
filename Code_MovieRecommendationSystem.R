@@ -5,12 +5,13 @@ setwd("~/Desktop/R project_Movie Recommnedation System /DataSet")
 movies_data = fread("movies.csv")
 ratings_data = fread("ratings.csv",stringsAsFactors = FALSE)
 
-# Getting some info about the data
+# View the data
 View(movies_data)
 View(rating_data)
 # length(movies_data$movieId)
 # length(ratings_data$userId)
 
+# Getting some info about the data
 summary(movies_data) # the statistics on id isnt useful as id is just an index
 summary(ratings_data)
 
@@ -20,7 +21,9 @@ ratings_data = ratings_data[, timestamp := NULL] # := modifies the data.table di
 # View(ratings_data)
 
 
-# display which rating we have the most
+
+# Q : WHAT IS THE MOST OCCURING RATING?
+# A : WE USE A HIST
 library(ggplot2)
 
 ggplot(ratings_data,aes(x=rating)) + 
@@ -28,8 +31,9 @@ ggplot(ratings_data,aes(x=rating)) +
 
 
 
-# display which genre has the most rating  , to do this we need to join the tables using sql 
-# Better use sql for query operations cuz the db is so large
+# Q : WHICH GENRE HAS THE MOST RATING?
+# A : to do this , first we need to create sql db and then 
+      #join the tables using sql 
 
 # install.packages("duckdb")
 # install.packages("dplyr")
@@ -46,11 +50,13 @@ dbWriteTable(con, "MOVIES", movies_data, row.names = FALSE)
 dbWriteTable(con, "RATINGS", ratings_data, row.names = FALSE)
 
 
-# first , we need to join the two tables 
+# Join the two tables
 movies_rating_data = inner_join(movies_data , rating_data , by = "movieId")
 View(movies_rating_data)
 
-# Get the avg rating for every film
+
+# Q : WHAT IS THE AVG RATING FOR EACH FILM
+# A : Get the avg rating for each film
 film_avg_rating = movies_rating_data [ , .( avg_rating = round( mean(rating) ,digits = 1 ) ) ,by = factor(movieId) ]
 View(film_avg_rating)
 summary(film_avg_rating)
@@ -66,8 +72,8 @@ length(film_avg_rating$movieId)
 # same number of rows )
 
 
-
-# Get the avg rating for each genre
+# Q : WHAT IS THE AVG RATING FOR EACH "SPECIFIC" GENRE
+# A : Get the avg rating for each genre
 genres_avg_rating = movies_rating_data [ , .( avg_rating = round( mean(rating) ,digits = 1 ) ) ,by = factor(genres) ]
 View(genres_avg_rating)
 names(genres_avg_rating)[names(genres_avg_rating) == "factor"] <- "genres"
@@ -75,7 +81,7 @@ length(genres_avg_rating$genres)  # 918
 
 
 
-# we check how many users are rating each film 
+# Q : HOW MANY USERS ARE RATING EACH FILM
 film_count_ratings= movies_rating_data [ , .N ,by = factor(movieId) ]
 head(film_count_ratings)
 View(film_count_ratings)
@@ -96,8 +102,8 @@ View(genres_avg_rating)
 
 
 
-
-# Then calculate the avg rating for each genre and plot
+# Q : WHAT IS THE AVG RATING FOR EACH "GENERAL" GENRE
+# A : Then calculate the avg rating for each genre and plot
 common_genre_rating = genres_avg_rating[, .(avg_rating = round(mean(avg_rating),1))  , by = factor(common_genre)]
 View(common_genre_rating)
 names(common_genre_rating)[names(common_genre_rating) == "factor"] <- "genres"
@@ -133,10 +139,8 @@ barplot(height = common_genre_rating$avg_rating ,
 
 
 
-
-# Plot correlation between genre and rating
-
-
+# Q : IS THERE CORRELATION BTW GENRE AND RATING ? 
+# A :  Plot correlation between genre and rating
 genres_avg_rating$common_genre = as.factor(genres_avg_rating$common_genre)
 genre_rating_correlation = lm(avg_rating ~ common_genre , data = genres_avg_rating) 
 
@@ -155,7 +159,10 @@ sum(is.na(residuals)) # to check if there are NA
 
 
 
-# See if exists hgih leverage points 
+# Q : ARE THERE HIGH LEVERAGE POINTS , IF SO , DO THEY IMPACT THE CORRELATION,
+# I.E, IF WE REMOVE THE HIGH LEVERAGE POINTS , WILL THE CORRELATION GET BETTER?
+
+
 # Definition:
 #   High leverage points are observations (data points) that have extreme values of predictor variables (independent variables).
 # These points disproportionately affect the regression model because they exert significant leverage on the estimated regression coefficients.
